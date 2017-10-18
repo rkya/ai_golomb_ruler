@@ -126,6 +126,76 @@ def FC(L, M):
 
 
 #Bonus: backtracking + constraint propagation
+def isValueConsistentCP(value, assignedVariables, distance):
+    newSetValues = set()
+    for marker in assignedVariables:
+        newDistance = abs(value - marker)
+        if newDistance in distance or newDistance in newSetValues or newDistance == 0:
+            return False, set()
+        newSetValues.add(newDistance)
+
+    if len(assignedVariables) == 0:
+        if value in distance or value in newSetValues:
+            return False, set()
+        newSetValues.add(value)
+    return True, newSetValues
+
+
+def propogateConstraints(L, remainingLegalValues, newDistance):
+    singleValue = set()
+    index = next(iter(newDistance))
+    remainingLegalValues[index] = list()
+    remainingLegalValues[index].append(index)
+    for i in range(0, L + 1):
+        if i != index:
+            if len(remainingLegalValues[i]) == 1:
+                if remainingLegalValues[i][0] in singleValue:
+                    return False
+                else:
+                    singleValue.add(remainingLegalValues[i][0])
+            elif len(remainingLegalValues[i]) <= 0:
+                return False
+    return True
+
+def backTrackWithConstraintPropogation(assignedVariables, csp, M, L, variables, distance, remainingLegalValues):
+    if len(assignedVariables) == M:
+        return assignedVariables
+    for value in variables:
+        result, newDistance = isValueConsistentCP(value, assignedVariables, distance)
+        if result:
+            distancePurge = newDistance - distance
+            distance = distance.union(newDistance)
+            assignedVariables.append(value)
+            if len(assignedVariables) == M:
+                return assignedVariables
+            if propogateConstraints(L, remainingLegalValues, newDistance):
+                assignedVariables = backTrackWithConstraintPropogation(assignedVariables, csp, M, L, variables, distance, remainingLegalValues)
+                if len(assignedVariables) == M:
+                    return assignedVariables
+            assignedVariables.remove(value)
+            distance = distance - distancePurge
+    return assignedVariables
+
+
 def CP(L, M):
-    "*** YOUR CODE HERE ***"
-    return -1,[]
+    assignedVariables = list()
+    distance = set()
+    variables = [i for i in range(0, L + 1)]
+    remainingLegalValues = list(list())
+    for i in range(0, L + 1):
+        remainingLegalValues.append(variables)
+    assignedVariables = backTrackWithConstraintPropogation(assignedVariables, 0, M, L, variables, distance, remainingLegalValues)
+    if len(assignedVariables) == 0:
+        return -1, []
+    while True:
+        prevL = L
+        prevAssignedVariables = assignedVariables
+        assignedVariables = list()
+        L -= 1
+        variables = [i for i in range(0, L + 1)]
+        remainingLegalValues = list(list())
+        for i in range(0, L + 1):
+            remainingLegalValues.append(variables)
+        assignedVariables = backTrackWithConstraintPropogation(assignedVariables, 0, M, L, variables, distance, remainingLegalValues)
+        if len(assignedVariables) == 0:
+            return prevL, prevAssignedVariables
