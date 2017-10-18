@@ -53,7 +53,17 @@ def BT(L, M):
     variables = [i for i in range(0, L + 1)]
     # print variables
     assignedVariables = backTrack(assignedVariables, 0, M, variables, distance)
-    return -1, assignedVariables
+    if len(assignedVariables) == 0:
+        return -1, []
+    while True:
+        prevL = L
+        prevAssignedVariables = assignedVariables
+        assignedVariables = list()
+        L -= 1
+        variables = [i for i in range(0, L + 1)]
+        assignedVariables = backTrack(assignedVariables, 0, M, variables, distance)
+        if len(assignedVariables) == 0:
+            return prevL, prevAssignedVariables
 
 #Your backtracking+Forward checking function implementation
 def FC(L, M):
