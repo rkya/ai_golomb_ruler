@@ -3,6 +3,9 @@
 #Each of your functions should return the minimum possible L value alongside the marker positions
 #Or return -1,[] if no solution exists for the given L
 
+counterBT = 0
+counterFC = 0
+counterCP = 0
 #Your backtracking function implementation
 def isValueConsistent(value, assignedVariables, distance):
     newSetValues = set()
@@ -20,6 +23,8 @@ def isValueConsistent(value, assignedVariables, distance):
 
 
 def backTrack(assignedVariables, csp, M, variables, distance):
+    global counterBT
+    counterBT += 1
     if len(assignedVariables) == M:
         return assignedVariables
     for value in variables:
@@ -39,13 +44,17 @@ def backTrack(assignedVariables, csp, M, variables, distance):
 
 
 def BT(L, M):
+    global counterBT
     assignedVariables = list()
     distance = set()
     variables = [i for i in range(0, L + 1)]
     assignedVariables = backTrack(assignedVariables, 0, M, variables, distance)
     if len(assignedVariables) == 0:
+        print counterBT
         return -1, []
     while True:
+        prevCounterBT = counterBT
+        counterBT = 0
         prevL = L
         prevAssignedVariables = assignedVariables
         assignedVariables = list()
@@ -53,6 +62,7 @@ def BT(L, M):
         variables = [i for i in range(0, L + 1)]
         assignedVariables = backTrack(assignedVariables, 0, M, variables, distance)
         if len(assignedVariables) == 0:
+            print prevCounterBT
             return prevL, prevAssignedVariables
 
 #Your backtracking+Forward checking function implementation
@@ -83,6 +93,8 @@ def forwardCheck(L, remainingLegalValues, newDistance):
 
 
 def backTrackWithForwardChecking(assignedVariables, csp, M, L, variables, distance, remainingLegalValues):
+    global counterFC
+    counterFC += 1
     if len(assignedVariables) == M:
         return assignedVariables
     for value in variables:
@@ -102,6 +114,7 @@ def backTrackWithForwardChecking(assignedVariables, csp, M, L, variables, distan
     return assignedVariables
 
 def FC(L, M):
+    global counterFC
     assignedVariables = list()
     distance = set()
     variables = [i for i in range(0, L + 1)]
@@ -110,8 +123,11 @@ def FC(L, M):
         remainingLegalValues.append(variables)
     assignedVariables = backTrackWithForwardChecking(assignedVariables, 0, M, L, variables, distance, remainingLegalValues)
     if len(assignedVariables) == 0:
+        print counterFC
         return -1, []
     while True:
+        prevCounterFC = counterFC
+        counterFC = 0
         prevL = L
         prevAssignedVariables = assignedVariables
         assignedVariables = list()
@@ -122,6 +138,7 @@ def FC(L, M):
             remainingLegalValues.append(variables)
         assignedVariables = backTrackWithForwardChecking(assignedVariables, 0, M, L, variables, distance, remainingLegalValues)
         if len(assignedVariables) == 0:
+            print prevCounterFC
             return prevL, prevAssignedVariables
 
 
@@ -158,6 +175,8 @@ def propogateConstraints(L, remainingLegalValues, newDistance):
     return True
 
 def backTrackWithConstraintPropogation(assignedVariables, csp, M, L, variables, distance, remainingLegalValues):
+    global counterCP
+    counterCP += 1
     if len(assignedVariables) == M:
         return assignedVariables
     for value in variables:
@@ -178,6 +197,7 @@ def backTrackWithConstraintPropogation(assignedVariables, csp, M, L, variables, 
 
 
 def CP(L, M):
+    global counterCP
     assignedVariables = list()
     distance = set()
     variables = [i for i in range(0, L + 1)]
@@ -186,8 +206,11 @@ def CP(L, M):
         remainingLegalValues.append(variables)
     assignedVariables = backTrackWithConstraintPropogation(assignedVariables, 0, M, L, variables, distance, remainingLegalValues)
     if len(assignedVariables) == 0:
+        print counterCP
         return -1, []
     while True:
+        prevCounterCP = counterCP
+        counterCP = 0
         prevL = L
         prevAssignedVariables = assignedVariables
         assignedVariables = list()
@@ -198,4 +221,5 @@ def CP(L, M):
             remainingLegalValues.append(variables)
         assignedVariables = backTrackWithConstraintPropogation(assignedVariables, 0, M, L, variables, distance, remainingLegalValues)
         if len(assignedVariables) == 0:
+            print prevCounterCP
             return prevL, prevAssignedVariables
