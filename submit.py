@@ -63,7 +63,7 @@ def BT(L, M):
         assignedVariables = backTrack(assignedVariables, 0, M, variables, distance)
         if len(assignedVariables) == 0:
             print prevCounterBT
-            return prevL, prevAssignedVariables
+            return prevL, sorted(prevAssignedVariables)
 
 #Your backtracking+Forward checking function implementation
 def isValueConsistentFT(value, assignedVariables, distance):
@@ -171,7 +171,10 @@ def FC(L, M):
         assignedVariables = backTrackWithForwardChecking(assignedVariables, 0, M, L, variables, distance, remainingLegalValues)
         if len(assignedVariables) == 0:
             print prevCounterFC
-            return prevL, prevAssignedVariables
+            return prevL, sorted(prevAssignedVariables)
+
+
+
 
 
 #Bonus: backtracking + constraint propagation
@@ -189,28 +192,50 @@ def isValueConsistentCP(value, assignedVariables, distance):
         newSetValues.add(value)
     return True, newSetValues
 
+def calculateLegalValuesCP(distance, assignedVariables, remainingLegalValues):
+    temp = remainingLegalValues[:]
+    for value in remainingLegalValues:
+        for marker in distance:
+            newDistance = abs(value - marker)
+            if newDistance in distance or newDistance in assignedVariables:
+                if value in temp:
+                    temp.remove(value)
+    return temp[:]
 
-def propogateConstraints(L, remainingLegalValues, newDistance):
-    singleValue = set()
-    index = next(iter(newDistance))
-    remainingLegalValues[index] = list()
-    remainingLegalValues[index].append(index)
-    for i in range(0, L + 1):
+
+def propagateConstraints(L, remainingLegalValues, newDistance, value, assignedVariables, M):
+    index = len(assignedVariables) - 1
+    remainingLegalValues[index] = [value]
+    constrainedLegalValues = remainingLegalValues[:]
+
+    # remainingLegalValues[index].append(value)
+    for i in range(index + 1, M):
         if i != index:
-            if len(remainingLegalValues[i]) == 1:
-                if remainingLegalValues[i][0] in singleValue:
-                    return False
-                else:
-                    singleValue.add(remainingLegalValues[i][0])
-            elif len(remainingLegalValues[i]) <= 0:
+            constrainedLegalValues[i] = calculateLegalValuesCP(newDistance, assignedVariables, constrainedLegalValues[i])
+            if len(constrainedLegalValues[i]) == 0:
                 return False
+    for i in range(0, M):
+        if len(constrainedLegalValues[i]) == 1 and i != index and constrainedLegalValues[i][0] == value:
+            return False
     return True
 
-def backTrackWithConstraintPropogation(assignedVariables, csp, M, L, variables, distance, remainingLegalValues):
-    global counterCP
-    counterCP += 1
+
+def backTrackWithConstraintPropagation(assignedVariables, csp, M, L, variables, distance, remainingLegalValues):
+    global counterFC
+    counterFC += 1
     if len(assignedVariables) == M:
         return assignedVariables
+
+    #restoring remainingLegalValues:
+    remainingLegalValues = list( list() )
+    for i in range(0, M):
+        remainingLegalValues.append(variables)
+    for index in range(0, M):
+        if index < len(assignedVariables):
+            remainingLegalValues[index] = [assignedVariables[index]]
+        else:
+            remainingLegalValues[index] = calculateLegalValuesCP(distance, assignedVariables, remainingLegalValues[index])
+
     for value in variables:
         result, newDistance = isValueConsistentCP(value, assignedVariables, distance)
         if result:
@@ -219,30 +244,31 @@ def backTrackWithConstraintPropogation(assignedVariables, csp, M, L, variables, 
             assignedVariables.append(value)
             if len(assignedVariables) == M:
                 return assignedVariables
-            if propogateConstraints(L, remainingLegalValues, newDistance):
-                assignedVariables = backTrackWithConstraintPropogation(assignedVariables, csp, M, L, variables, distance, remainingLegalValues)
+
+            if propagateConstraints(L, remainingLegalValues, newDistance, value, assignedVariables, M):
+                # print "remainingLegalValues", remainingLegalValues
+                assignedVariables = backTrackWithConstraintPropagation(assignedVariables, csp, M, L, variables, distance, remainingLegalValues)
                 if len(assignedVariables) == M:
                     return assignedVariables
             assignedVariables.remove(value)
             distance = distance - distancePurge
     return assignedVariables
 
-
 def CP(L, M):
-    global counterCP
+    global counterFC
     assignedVariables = list()
     distance = set()
     variables = [i for i in range(0, L + 1)]
     remainingLegalValues = list(list())
-    for i in range(0, L + 1):
+    for i in range(0, M):
         remainingLegalValues.append(variables)
-    assignedVariables = backTrackWithConstraintPropogation(assignedVariables, 0, M, L, variables, distance, remainingLegalValues)
+    assignedVariables = backTrackWithConstraintPropagation(assignedVariables, 0, M, L, variables, distance, remainingLegalValues)
     if len(assignedVariables) == 0:
-        print counterCP
+        print counterFC
         return -1, []
     while True:
-        prevCounterCP = counterCP
-        counterCP = 0
+        prevCounterFC = counterFC
+        counterFC = 0
         prevL = L
         prevAssignedVariables = assignedVariables
         assignedVariables = list()
@@ -251,7 +277,8 @@ def CP(L, M):
         remainingLegalValues = list(list())
         for i in range(0, L + 1):
             remainingLegalValues.append(variables)
-        assignedVariables = backTrackWithConstraintPropogation(assignedVariables, 0, M, L, variables, distance, remainingLegalValues)
+        assignedVariables = backTrackWithConstraintPropagation(assignedVariables, 0, M, L, variables, distance, remainingLegalValues)
         if len(assignedVariables) == 0:
-            print prevCounterCP
-            return prevL, prevAssignedVariables
+            print prevCounterFC
+            return prevL, sorted(prevAssignedVariables)
+
