@@ -3,14 +3,12 @@
 #Each of your functions should return the minimum possible L value alongside the marker positions
 #Or return -1,[] if no solution exists for the given L
 
-counterBT = 0
-counterFC = 0
-counterCP = 0
 #Your backtracking function implementation
 def isValueConsistent(value, assignedVariables, distance):
     newSetValues = set()
     for marker in assignedVariables:
         newDistance = abs(value - marker)
+        # Check for consistency i.e. space between every pair of markers is distinct and markers do not overlap
         if newDistance in distance or newDistance in newSetValues or newDistance == 0:
             return False, set()
         newSetValues.add(newDistance)
@@ -23,38 +21,38 @@ def isValueConsistent(value, assignedVariables, distance):
 
 
 def backTrack(assignedVariables, csp, M, variables, distance):
-    global counterBT
-    counterBT += 1
     if len(assignedVariables) == M:
         return assignedVariables
     for value in variables:
         result, newDistance = isValueConsistent(value, assignedVariables, distance)
+        # Continue with current value only if the solution of current value is consistent
         if result:
             distancePurge = newDistance - distance
             distance = distance.union(newDistance)
             assignedVariables.append(value)
             if len(assignedVariables) == M:
                 return assignedVariables
+            # Continue recursively to mark other positions on the ruler
             assignedVariables = backTrack(assignedVariables, csp, M, variables, distance)
             if len(assignedVariables) == M:
                 return assignedVariables
+            # This assignment did not work out, so backtrack
             assignedVariables.remove(value)
             distance = distance - distancePurge
     return assignedVariables
 
 
 def BT(L, M):
-    global counterBT
+    # Check if M markers can be put for a ruler of length L
     assignedVariables = list()
     distance = set()
     variables = [i for i in range(0, L + 1)]
     assignedVariables = backTrack(assignedVariables, 0, M, variables, distance)
     if len(assignedVariables) == 0:
-        print counterBT
         return -1, []
+
+    # Since length L is possible, check for length < L
     while True:
-        prevCounterBT = counterBT
-        counterBT = 0
         prevL = L
         prevAssignedVariables = assignedVariables
         assignedVariables = list()
@@ -62,7 +60,7 @@ def BT(L, M):
         variables = [i for i in range(0, L + 1)]
         assignedVariables = backTrack(assignedVariables, 0, M, variables, distance)
         if len(assignedVariables) == 0:
-            print prevCounterBT
+            # Since current lenth's ruler is not possible, return the previous result i.e. the optimal length ruler
             return prevL, sorted(prevAssignedVariables)
 
 #Your backtracking+Forward checking function implementation
@@ -70,6 +68,7 @@ def isValueConsistentFT(value, assignedVariables, distance):
     newSetValues = set()
     for marker in assignedVariables:
         newDistance = abs(value - marker)
+        # Check for consistency i.e. space between every pair of markers is distinct and markers do not overlap
         if newDistance in distance or newDistance in newSetValues or newDistance == 0:
             return False, set()
         newSetValues.add(newDistance)
@@ -87,6 +86,7 @@ def calculateLegalValues(distance, assignedVariables, remainingLegalValues):
             newDistance = abs(value - marker)
             if newDistance in distance or newDistance in assignedVariables:
                 if value in temp:
+                    # Remove this value from the set of legal values for all its neighbours
                     temp.remove(value)
     return temp[:]
 
@@ -94,31 +94,21 @@ def calculateLegalValues(distance, assignedVariables, remainingLegalValues):
 def forwardCheck(L, remainingLegalValues, newDistance, value, assignedVariables, M):
     index = len(assignedVariables) - 1
     remainingLegalValues[index] = [value]
-    # remainingLegalValues[index].append(value)
     for i in range(index + 1, M):
         if i != index:
             remainingValuesRow = calculateLegalValues(newDistance, assignedVariables, remainingLegalValues[i])
+            # Check if legal values of its neighbours is not empty
             if len(remainingValuesRow) == 0:
                 return False
     return True
-    # index = next(iter(newDistance))
-    # remainingLegalValues[index] = list()
-    # remainingLegalValues[index].append(index)
-    # for i in range(0, L + 1):
-    #     if i != index:
-    #         if len(remainingLegalValues[i]) <= 0:
-    #             return False
-    # return True
 
 
 def backTrackWithForwardChecking(assignedVariables, csp, M, L, variables, distance, remainingLegalValues):
-    global counterFC
-    counterFC += 1
     if len(assignedVariables) == M:
         return assignedVariables
 
     #restoring remainingLegalValues:
-    remainingLegalValues = list( list() )
+    remainingLegalValues = list(list())
     for i in range(0, M):
         remainingLegalValues.append(variables)
     for index in range(0, M):
@@ -129,6 +119,7 @@ def backTrackWithForwardChecking(assignedVariables, csp, M, L, variables, distan
 
     for value in variables:
         result, newDistance = isValueConsistentFT(value, assignedVariables, distance)
+        # Continue with current value only if the solution of current value is consistent
         if result:
             distancePurge = newDistance - distance
             distance = distance.union(newDistance)
@@ -137,16 +128,18 @@ def backTrackWithForwardChecking(assignedVariables, csp, M, L, variables, distan
                 return assignedVariables
 
             if forwardCheck(L, remainingLegalValues, newDistance, value, assignedVariables, M):
-                # print "remainingLegalValues", remainingLegalValues
+                # Continue recursively to mark other positions on the ruler
                 assignedVariables = backTrackWithForwardChecking(assignedVariables, csp, M, L, variables, distance, remainingLegalValues)
                 if len(assignedVariables) == M:
                     return assignedVariables
+            # This assignment did not work out, so backtrack
             assignedVariables.remove(value)
             distance = distance - distancePurge
     return assignedVariables
 
+
 def FC(L, M):
-    global counterFC
+    # Check if M markers can be put for a ruler of length L
     assignedVariables = list()
     distance = set()
     variables = [i for i in range(0, L + 1)]
@@ -155,11 +148,9 @@ def FC(L, M):
         remainingLegalValues.append(variables)
     assignedVariables = backTrackWithForwardChecking(assignedVariables, 0, M, L, variables, distance, remainingLegalValues)
     if len(assignedVariables) == 0:
-        print counterFC
         return -1, []
+    # Since length L is possible, check for length < L
     while True:
-        prevCounterFC = counterFC
-        counterFC = 0
         prevL = L
         prevAssignedVariables = assignedVariables
         assignedVariables = list()
@@ -170,11 +161,7 @@ def FC(L, M):
             remainingLegalValues.append(variables)
         assignedVariables = backTrackWithForwardChecking(assignedVariables, 0, M, L, variables, distance, remainingLegalValues)
         if len(assignedVariables) == 0:
-            print prevCounterFC
             return prevL, sorted(prevAssignedVariables)
-
-
-
 
 
 #Bonus: backtracking + constraint propagation
@@ -182,6 +169,7 @@ def isValueConsistentCP(value, assignedVariables, distance):
     newSetValues = set()
     for marker in assignedVariables:
         newDistance = abs(value - marker)
+        # Check for consistency i.e. space between every pair of markers is distinct and markers do not overlap
         if newDistance in distance or newDistance in newSetValues or newDistance == 0:
             return False, set()
         newSetValues.add(newDistance)
@@ -199,6 +187,7 @@ def calculateLegalValuesCP(distance, assignedVariables, remainingLegalValues):
             newDistance = abs(value - marker)
             if newDistance in distance or newDistance in assignedVariables:
                 if value in temp:
+                    # Remove this value from the set of legal values for all its neighbours
                     temp.remove(value)
     return temp[:]
 
@@ -208,21 +197,20 @@ def propagateConstraints(L, remainingLegalValues, newDistance, value, assignedVa
     remainingLegalValues[index] = [value]
     constrainedLegalValues = remainingLegalValues[:]
 
-    # remainingLegalValues[index].append(value)
     for i in range(index + 1, M):
         if i != index:
             constrainedLegalValues[i] = calculateLegalValuesCP(newDistance, assignedVariables, constrainedLegalValues[i])
+            # Check if legal values of its neighbours is not empty
             if len(constrainedLegalValues[i]) == 0:
                 return False
     for i in range(0, M):
+        # Check if its neighbour has only one legal value same as its own value, then fail early
         if len(constrainedLegalValues[i]) == 1 and i != index and constrainedLegalValues[i][0] == value:
             return False
     return True
 
 
 def backTrackWithConstraintPropagation(assignedVariables, csp, M, L, variables, distance, remainingLegalValues):
-    global counterFC
-    counterFC += 1
     if len(assignedVariables) == M:
         return assignedVariables
 
@@ -238,6 +226,7 @@ def backTrackWithConstraintPropagation(assignedVariables, csp, M, L, variables, 
 
     for value in variables:
         result, newDistance = isValueConsistentCP(value, assignedVariables, distance)
+        # Continue with current value only if the solution of current value is consistent
         if result:
             distancePurge = newDistance - distance
             distance = distance.union(newDistance)
@@ -246,16 +235,17 @@ def backTrackWithConstraintPropagation(assignedVariables, csp, M, L, variables, 
                 return assignedVariables
 
             if propagateConstraints(L, remainingLegalValues, newDistance, value, assignedVariables, M):
-                # print "remainingLegalValues", remainingLegalValues
+                # Continue recursively to mark other positions on the ruler
                 assignedVariables = backTrackWithConstraintPropagation(assignedVariables, csp, M, L, variables, distance, remainingLegalValues)
                 if len(assignedVariables) == M:
                     return assignedVariables
+            # This assignment did not work out, so backtrack
             assignedVariables.remove(value)
             distance = distance - distancePurge
     return assignedVariables
 
 def CP(L, M):
-    global counterFC
+    # Check if M markers can be put for a ruler of length L
     assignedVariables = list()
     distance = set()
     variables = [i for i in range(0, L + 1)]
@@ -264,11 +254,9 @@ def CP(L, M):
         remainingLegalValues.append(variables)
     assignedVariables = backTrackWithConstraintPropagation(assignedVariables, 0, M, L, variables, distance, remainingLegalValues)
     if len(assignedVariables) == 0:
-        print counterFC
         return -1, []
+    # Since length L is possible, check for length < L
     while True:
-        prevCounterFC = counterFC
-        counterFC = 0
         prevL = L
         prevAssignedVariables = assignedVariables
         assignedVariables = list()
@@ -279,6 +267,5 @@ def CP(L, M):
             remainingLegalValues.append(variables)
         assignedVariables = backTrackWithConstraintPropagation(assignedVariables, 0, M, L, variables, distance, remainingLegalValues)
         if len(assignedVariables) == 0:
-            print prevCounterFC
             return prevL, sorted(prevAssignedVariables)
 
