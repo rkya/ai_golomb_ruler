@@ -80,16 +80,35 @@ def isValueConsistentFT(value, assignedVariables, distance):
         newSetValues.add(value)
     return True, newSetValues
 
+def calculateLegalValues(distance, assignedVariables, remainingLegalValues):
+    temp = remainingLegalValues[:]
+    for value in remainingLegalValues:
+        for marker in distance:
+            newDistance = abs(value - marker)
+            if newDistance in distance or newDistance in assignedVariables:
+                if value in temp:
+                    temp.remove(value)
+    return temp[:]
 
-def forwardCheck(L, remainingLegalValues, newDistance):
-    index = next(iter(newDistance))
-    remainingLegalValues[index] = list()
-    remainingLegalValues[index].append(index)
-    for i in range(0, L + 1):
+
+def forwardCheck(L, remainingLegalValues, newDistance, value, assignedVariables, M):
+    index = len(assignedVariables) - 1
+    remainingLegalValues[index] = [value]
+    # remainingLegalValues[index].append(value)
+    for i in range(index + 1, M):
         if i != index:
-            if len(remainingLegalValues[i]) <= 0:
+            remainingValuesRow = calculateLegalValues(newDistance, assignedVariables, remainingLegalValues[i])
+            if len(remainingValuesRow) == 0:
                 return False
     return True
+    # index = next(iter(newDistance))
+    # remainingLegalValues[index] = list()
+    # remainingLegalValues[index].append(index)
+    # for i in range(0, L + 1):
+    #     if i != index:
+    #         if len(remainingLegalValues[i]) <= 0:
+    #             return False
+    # return True
 
 
 def backTrackWithForwardChecking(assignedVariables, csp, M, L, variables, distance, remainingLegalValues):
@@ -97,6 +116,17 @@ def backTrackWithForwardChecking(assignedVariables, csp, M, L, variables, distan
     counterFC += 1
     if len(assignedVariables) == M:
         return assignedVariables
+
+    #restoring remainingLegalValues:
+    remainingLegalValues = list( list() )
+    for i in range(0, M):
+        remainingLegalValues.append(variables)
+    for index in range(0, M):
+        if index < len(assignedVariables):
+            remainingLegalValues[index] = [assignedVariables[index]]
+        else:
+            remainingLegalValues[index] = calculateLegalValues(distance, assignedVariables, remainingLegalValues[index])
+
     for value in variables:
         result, newDistance = isValueConsistentFT(value, assignedVariables, distance)
         if result:
@@ -105,7 +135,9 @@ def backTrackWithForwardChecking(assignedVariables, csp, M, L, variables, distan
             assignedVariables.append(value)
             if len(assignedVariables) == M:
                 return assignedVariables
-            if forwardCheck(L, remainingLegalValues, newDistance):
+
+            if forwardCheck(L, remainingLegalValues, newDistance, value, assignedVariables, M):
+                # print "remainingLegalValues", remainingLegalValues
                 assignedVariables = backTrackWithForwardChecking(assignedVariables, csp, M, L, variables, distance, remainingLegalValues)
                 if len(assignedVariables) == M:
                     return assignedVariables
@@ -119,7 +151,7 @@ def FC(L, M):
     distance = set()
     variables = [i for i in range(0, L + 1)]
     remainingLegalValues = list(list())
-    for i in range(0, L + 1):
+    for i in range(0, M):
         remainingLegalValues.append(variables)
     assignedVariables = backTrackWithForwardChecking(assignedVariables, 0, M, L, variables, distance, remainingLegalValues)
     if len(assignedVariables) == 0:
